@@ -6,11 +6,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://lens-university-market-place-alpha.vercel.app/',
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: 'https://lens-university-market-place-alpha.vercel.app/',
         changeOrigin: true
       }
     }
