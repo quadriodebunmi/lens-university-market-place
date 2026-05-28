@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
+const api = axios.create({ baseURL: 'https://lens-university-market-place-alpha.vercel.app/api' });
 
 api.interceptors.request.use((config) => {
   // Admin token
