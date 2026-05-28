@@ -86,7 +86,7 @@ const SellerModal = ({ seller, onClose, onSaved }) => {
             <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Username *</label>
-                <input className="form-control" required value={form.username} onChange={e => set('username', e.target.value)} />
+                <input className="form-control" required value={form.username || ""} onChange={e => set('username', e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Store Name *</label>
