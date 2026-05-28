@@ -71,7 +71,7 @@ const SellerRegister = () => {
           <div className="grid-2">
             <div className="form-group">
               <label className="form-label">Username *</label>
-              <input className="form-control" required placeholder="yourstorename"
+              <input className="form-control" required placeholder="add a username with no space"
                 value={form.username}
                 onChange={e => set('username', e.target.value.toLowerCase().replace(/\s/g, ''))} />
             </div>
@@ -136,8 +136,8 @@ const SellerRegister = () => {
                 value={form.website} onChange={e => set('website', e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Instagram</label>
-              <input className="form-control" placeholder="@handle"
+              <label className="form-label">TikTok</label>
+              <input className="form-control" placeholder="your TikTok username eg. user1234"
                 value={form.social_media_handle} onChange={e => set('social_media_handle', e.target.value)} />
             </div>
           </div>
