@@ -60,7 +60,7 @@ router.post('/register', async (req, res) => {
       message: 'Account created! Check your email and wait for admin approval.'
     });
   } catch (err) {
-    if (err.code === 11000) return res.status(400).json({ success: false, message: 'Username or email already taken' });
+    //if (err.code === 11000) return res.status(400).json({ success: false, message: 'Username or email already taken' });
     res.status(500).json({ success: false, message: err.message });
   }
 });
