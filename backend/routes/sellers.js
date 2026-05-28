@@ -33,16 +33,18 @@ const router = express.Router();
 //   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 // });
 
-// ─── GET /api/sellers — public (Smart TikTok Mix) ───────────────────────────
+// ─── GET /api/sellers — public (TikTok Smart Mix with sort options) ─────────
 router.get('/', async (req, res) => {
   try {
-    const cacheKey = `sellers:mix:${JSON.stringify(req.query)}`;
+    const cacheKey = `sellers:list:${JSON.stringify(req.query)}`;
     const cached = await cache.get(cacheKey);
     if (cached) return res.json(cached);
 
     const { 
       page = 1, 
       limit = 12, 
+      sort = 'tiktokScore',  // DEFAULT is now tiktokScore
+      order = 'desc', 
       category, 
       search, 
       minRating 
@@ -51,7 +53,7 @@ router.get('/', async (req, res) => {
     const query = { 
       isActive: true, 
       isApproved: true,
-  //   token_expires_at: { $gt: new Date() }
+    //  token_expires_at: { $gt: new Date() }
     };
     
     if (category && category !== 'All') query.category = category;
@@ -64,83 +66,101 @@ router.get('/', async (req, res) => {
 
     const limitNum = parseInt(limit);
     const total = await Seller.countDocuments(query);
-    const skip = (parseInt(page) - 1) * limitNum;
     
-    // Define ratios (40% top-rated, 40% new, 20% random)
-    const topRatedCount = Math.floor(limitNum * 0.4);
-    const newCount = Math.floor(limitNum * 0.4);
-    const randomCount = limitNum - topRatedCount - newCount;
+    let sellers;
     
-    const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    
-    // Calculate category page for consistent pagination
-    const categoryPage = Math.floor(skip / limitNum) + 1;
-    const categorySkip = (categoryPage - 1) * limitNum;
-    
-    // 1. Top-rated sellers (rating >= 4)
-    let topRatedSellers = [];
-    if (topRatedCount > 0) {
-      topRatedSellers = await Seller.find({ 
-        ...query, 
-        rating: { $gte: 5 }
-      })
+    // If sorting by TikTok Smart Mix (default)
+    if (sort === 'tiktokScore') {
+      const skip = (parseInt(page) - 1) * limitNum;
+      
+      // Define ratios (40% top-rated, 40% new, 20% random)
+      const topRatedCount = Math.floor(limitNum * 0.4);
+      const newCount = Math.floor(limitNum * 0.4);
+      const randomCount = limitNum - topRatedCount - newCount;
+      
+      const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      
+      const categoryPage = Math.floor(skip / limitNum) + 1;
+      const categorySkip = (categoryPage - 1) * limitNum;
+      
+      let topRatedSellers = [];
+      let newSellers = [];
+      let randomSellers = [];
+      
+      // 1. Top-rated sellers
+      if (topRatedCount > 0) {
+        topRatedSellers = await Seller.find({ 
+          ...query, 
+          rating: { $gte: 4 }
+        })
+          .select('-password')
+          .sort({ rating: -1, createdAt: -1 })
+          .skip(categorySkip)
+          .limit(topRatedCount)
+          .lean();
+      }
+      
+      // 2. New sellers
+      if (newCount > 0) {
+        const existingIds = topRatedSellers.map(s => s._id);
+        newSellers = await Seller.find({ 
+          ...query, 
+          createdAt: { $gte: oneMonthAgo },
+          _id: { $nin: existingIds }
+        })
+          .select('-password')
+          .sort({ createdAt: -1 })
+          .skip(categorySkip)
+          .limit(newCount)
+          .lean();
+      }
+      
+      // 3. Random discovery sellers
+      if (randomCount > 0) {
+        const existingIds = [
+          ...topRatedSellers.map(s => s._id),
+          ...newSellers.map(s => s._id)
+        ];
+        
+        randomSellers = await Seller.aggregate([
+          { $match: { ...query, _id: { $nin: existingIds } } },
+          { $sample: { size: randomCount + (skip * 2) } }
+        ]);
+        
+        randomSellers = randomSellers.slice(skip, skip + randomCount);
+        randomSellers = randomSellers.map(({ password, ...seller }) => seller);
+      }
+      
+      // Combine and interleave
+      let allSelected = [];
+      const maxLen = Math.max(topRatedSellers.length, newSellers.length, randomSellers.length);
+      
+      for (let i = 0; i < maxLen; i++) {
+        if (topRatedSellers[i]) allSelected.push(topRatedSellers[i]);
+        if (newSellers[i]) allSelected.push(newSellers[i]);
+        if (randomSellers[i]) allSelected.push(randomSellers[i]);
+      }
+      
+      // Deterministic shuffle
+      const seed = parseInt(page);
+      sellers = deterministicShuffle(allSelected, seed);
+    } 
+    // If sorting by createdAt, rating, or other fields
+    else {
+      const sortObj = {};
+      sortObj[sort] = order === 'asc' ? 1 : -1;
+      
+      sellers = await Seller.find(query)
         .select('-password')
-        .sort({ rating: -1, createdAt: -1 })
-        .skip(categorySkip)
-        .limit(topRatedCount)
+        .sort(sortObj)
+        .skip((parseInt(page) - 1) * limitNum)
+        .limit(limitNum)
         .lean();
     }
-    
-    // 2. New sellers (last 30 days)
-    let newSellers = [];
-    if (newCount > 0) {
-      const existingIds = topRatedSellers.map(s => s._id);
-      newSellers = await Seller.find({ 
-        ...query, 
-        createdAt: { $gte: oneMonthAgo },
-        _id: { $nin: existingIds }
-      })
-        .select('-password')
-        .sort({ createdAt: -1 })
-        .skip(categorySkip)
-        .limit(newCount)
-        .lean();
-    }
-    
-    // 3. Random discovery sellers
-    let randomSellers = [];
-    if (randomCount > 0) {
-      const existingIds = [
-        ...topRatedSellers.map(s => s._id),
-        ...newSellers.map(s => s._id)
-      ];
-      
-      randomSellers = await Seller.aggregate([
-        { $match: { ...query, _id: { $nin: existingIds } } },
-        { $sample: { size: randomCount + (skip * 2) } }
-      ]);
-      
-      randomSellers = randomSellers.slice(skip, skip + randomCount);
-      // Remove password field
-      randomSellers = randomSellers.map(({ password, ...seller }) => seller);
-    }
-    
-    // Combine and interleave
-    let allSelected = [];
-    const maxLen = Math.max(topRatedSellers.length, newSellers.length, randomSellers.length);
-    
-    for (let i = 0; i < maxLen; i++) {
-      if (topRatedSellers[i]) allSelected.push(topRatedSellers[i]);
-      if (newSellers[i]) allSelected.push(newSellers[i]);
-      if (randomSellers[i]) allSelected.push(randomSellers[i]);
-    }
-    
-    // Deterministic shuffle based on page number
-    const shuffled = deterministicShuffle(allSelected, parseInt(page));
 
     const result = { 
       success: true, 
-      sellers: shuffled, 
+      sellers, 
       pagination: { 
         total, 
         page: parseInt(page), 
