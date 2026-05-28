@@ -17,8 +17,8 @@ const SellerDashboard = () => {
     const h = { Authorization: `Bearer ${token}` };
 
     Promise.all([
-      axios.get('/api/seller/products', { headers: h }),
-      axios.get('/api/seller/token-status', { headers: h })
+      axios.get('https://lens-university-market-place-alpha.vercel.app/api/seller/products', { headers: h }),
+      axios.get('https://lens-university-market-place-alpha.vercel.app/api/seller/token-status', { headers: h })
     ]).then(([pRes, tRes]) => {
       const products = pRes.data.products || [];
       const now = new Date();
