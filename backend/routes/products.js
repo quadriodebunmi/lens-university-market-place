@@ -1,7 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import Seller from '../models/Seller.js';
-import { protect } from '../middleware/auth.js';
+import { protect, protectSeller } from '../middleware/auth.js';
 import cache from '../utils/cache.js';
 
 const router = express.Router();
@@ -353,6 +353,19 @@ router.put('/:id', protect, async (req, res) => {
 
 // ─── DELETE /api/products/:id — admin only ───────────────────────────────────
 router.delete('/:id', protect, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+   await cache.delPrefix('products:');
+    res.json({ success: true, message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
+// ─── DELETE /api/products/seller/:id — admin seller ───────────────────────────────────
+router.delete('/seller/:id', protectSeller, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
