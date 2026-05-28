@@ -50,7 +50,7 @@ const SellerToken = () => {
   const fetchStatus = async () => {
     setStatusLoading(true);
     try {
-      const res = await axios.get('/api/seller/token-status', { headers });
+      const res = await axios.get('https://lens-university-market-place-alpha.vercel.app/api/seller/token-status', { headers });
       setTokenStatus(res.data);
     } catch (err) { console.error(err); }
     finally { setStatusLoading(false); }
@@ -64,7 +64,7 @@ const SellerToken = () => {
     if (!code) return setError('Please enter a token code');
     setLoading(true); setError(''); setResult(null);
     try {
-      const res = await axios.post('/api/seller/redeem-token', { token: code }, { headers });
+      const res = await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller/redeem-token', { token: code }, { headers });
       setResult(res.data);
       setTokenInput('');
       toast.success('Token redeemed! Products are now live.');
