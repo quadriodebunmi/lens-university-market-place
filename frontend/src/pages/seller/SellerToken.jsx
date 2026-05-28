@@ -6,7 +6,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import './SellerToken.css';
 
-const ADMIN_WA = '2348000000000'; // update this to match your .env ADMIN_WHATSAPP
+const ADMIN_WA = '2349034611394'; // update this to match your .env ADMIN_WHATSAPP
 
 const CountdownBadge = ({ expiresAt }) => {
   const [label, setLabel] = useState('');
