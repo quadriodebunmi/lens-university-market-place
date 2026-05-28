@@ -52,7 +52,7 @@ const SellerProfile = () => {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await axios.put('/api/seller-auth/profile', form, {
+      await axios.put('https://lens-university-market-place-alpha.vercel.app/api/seller-auth/profile', form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       await refreshSeller();
