@@ -365,7 +365,7 @@ router.delete('/:id', protect, async (req, res) => {
 
 
 // ─── DELETE /api/products/seller/:id — admin seller ───────────────────────────────────
-router.delete('/seller/:id', protectSeller, async (req, res) => {
+router.delete('/seller/:id', async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
