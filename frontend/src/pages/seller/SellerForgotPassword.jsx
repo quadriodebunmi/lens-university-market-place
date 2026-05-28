@@ -24,7 +24,7 @@ const SellerForgotPassword = () => {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await axios.post('/api/seller-auth/forgot-password', { email });
+      await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller-auth/forgot-password', { email });
       toast.success('Reset code sent!');
       setStep(STEPS.CODE);
     } catch (err) {
@@ -38,7 +38,7 @@ const SellerForgotPassword = () => {
     if (codeStr.length < 5) return setError('Enter the full 5-digit code');
     setLoading(true); setError('');
     try {
-      await axios.post('/api/seller-auth/verify-reset-code', { email, code: codeStr });
+      await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller-auth/verify-reset-code', { email, code: codeStr });
       setStep(STEPS.PASSWORD);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid code');
@@ -51,7 +51,7 @@ const SellerForgotPassword = () => {
     if (newPw.length < 6) return setError('Password must be at least 6 characters');
     setLoading(true); setError('');
     try {
-      await axios.post('/api/seller-auth/reset-password', { email, code: codeStr, newPassword: newPw });
+      await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller-auth/reset-password', { email, code: codeStr, newPassword: newPw });
       toast.success('Password reset successfully!');
       setStep(STEPS.DONE);
     } catch (err) {
