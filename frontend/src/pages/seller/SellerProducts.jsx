@@ -40,10 +40,10 @@ const ProductModal = ({ product, onClose, onSaved, token }) => {
     setLoading(true); setError('');
     try {
       if (isEdit) {
-        await axios.put(`/api/seller/products/${product._id}`, form, { headers });
+        await axios.put(`https://lens-university-market-place-alpha.vercel.app/api/seller/products/${product._id}`, form, { headers });
         toast.success('Product updated!');
       } else {
-        await axios.post('/api/seller/products', form, { headers });
+        await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller/products', form, { headers });
         toast.success('Product posted!');
       }
       onSaved(); onClose();
