@@ -15,38 +15,113 @@ const cleanExpired = async () => {
 };
 
 // ─── GET /api/products — public ─────────────────────────────────────────────
+// router.get('/', async (req, res) => {
+//   try {
+//     await cleanExpired();
+
+//     const {
+//       page=1, limit=12, sort='createdAt', order='desc',
+//       category, search, seller, minPrice, maxPrice
+//     } = req.query;
+
+//     const cacheKey = `products:list:${JSON.stringify(req.query)}`;
+//     const cached   =await cache.get(cacheKey);
+//     //console.log(cached)
+//     if (cached) return res.json(cached);
+
+//     // Only show products that belong to sellers with an active token
+//     const now = new Date();
+//     const activeSellers = await Seller.find({
+//       isApproved: true,
+//       isActive:   true,
+//       token_expires_at: { $gt: now },  // seller's token must be valid
+//     }).select('_id');
+
+//     const activeSellersIds = activeSellers.map(s => s._id);
+
+//     const query = {
+//       isActive: true,
+//       seller:   { $in: activeSellersIds },
+//     };
+
+//     if (category && category !== 'All') query.category = category;
+//     if (seller) {
+//       // If filtering by specific seller, still require active token
+//       query.seller = activeSellersIds.includes(seller) ? seller : { $in: [] };
+//     }
+//     if (minPrice || maxPrice) {
+//       query.price = {};
+//       if (minPrice) query.price.$gte = parseFloat(minPrice);
+//       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+//     }
+//     if (search) query.$or = [
+//       { name:        { $regex: search, $options: 'i' } },
+//       { description: { $regex: search, $options: 'i' } },
+//     ];
+
+//     const sortObj = sort === 'rating' ? {} : { [sort]: order === 'asc' ? 1 : -1 };
+//     const total   = await Product.countDocuments(query);
+//     let products  = await Product.find(query)
+//       .populate('seller', 'store_name username profile_picture rating category whatsapp')
+//       .sort(sortObj)
+//       .skip((page - 1) * limit)
+//       .limit(parseInt(limit));
+
+//     if (sort === 'rating') {
+//       products = products.sort((a, b) =>
+//         order === 'asc'
+//           ? (a.seller?.rating || 0) - (b.seller?.rating || 0)
+//           : (b.seller?.rating || 0) - (a.seller?.rating || 0)
+//       );
+//     }
+
+//     const result = {
+//       success: true, products,
+//       pagination: { total, page: parseInt(page), pages: Math.ceil(total / limit), limit: parseInt(limit) }
+//     };
+
+//   await cache.set(cacheKey, result, 30); // cache public product list for 30 s
+//     res.json(result);
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
+// ─── GET /api/products — public (Smart TikTok Mix) ─────────────────────────
+// ─── GET /api/products — public (Smart TikTok Mix with Pagination) ─────────
 router.get('/', async (req, res) => {
   try {
     await cleanExpired();
 
     const {
-      page=1, limit=12, sort='createdAt', order='desc',
+      page = 1, limit = 12,
       category, search, seller, minPrice, maxPrice
     } = req.query;
 
-    const cacheKey = `products:list:${JSON.stringify(req.query)}`;
-    const cached   =await cache.get(cacheKey);
-    //console.log(cached)
+    const cacheKey = `products:mix:${JSON.stringify(req.query)}`;
+    const cached = await cache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    // Only show products that belong to sellers with an active token
     const now = new Date();
     const activeSellers = await Seller.find({
       isApproved: true,
-      isActive:   true,
-      token_expires_at: { $gt: now },  // seller's token must be valid
-    }).select('_id');
+      isActive: true,
+      token_expires_at: { $gt: now },
+    }).select('_id rating store_name username profile_picture category whatsapp');
 
     const activeSellersIds = activeSellers.map(s => s._id);
+    const sellerMap = new Map();
+    activeSellers.forEach(seller => {
+      sellerMap.set(seller._id.toString(), seller);
+    });
 
     const query = {
       isActive: true,
-      seller:   { $in: activeSellersIds },
+      seller: { $in: activeSellersIds },
     };
 
     if (category && category !== 'All') query.category = category;
     if (seller) {
-      // If filtering by specific seller, still require active token
       query.seller = activeSellersIds.includes(seller) ? seller : { $in: [] };
     }
     if (minPrice || maxPrice) {
@@ -55,37 +130,124 @@ router.get('/', async (req, res) => {
       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
     if (search) query.$or = [
-      { name:        { $regex: search, $options: 'i' } },
+      { name: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } },
     ];
 
-    const sortObj = sort === 'rating' ? {} : { [sort]: order === 'asc' ? 1 : -1 };
-    const total   = await Product.countDocuments(query);
-    let products  = await Product.find(query)
-      .populate('seller', 'store_name username profile_picture rating category whatsapp')
-      .sort(sortObj)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
-    if (sort === 'rating') {
-      products = products.sort((a, b) =>
-        order === 'asc'
-          ? (a.seller?.rating || 0) - (b.seller?.rating || 0)
-          : (b.seller?.rating || 0) - (a.seller?.rating || 0)
-      );
+    const total = await Product.countDocuments(query);
+    const limitNum = parseInt(limit);
+    const skip = (parseInt(page) - 1) * limitNum;
+    
+    // Define ratios (40% new, 40% high-rated, 20% random)
+    const newCount = Math.floor(limitNum * 0.4);
+    const highRatedCount = Math.floor(limitNum * 0.4);
+    const randomCount = limitNum - newCount - highRatedCount;
+    
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const highRatedSellerIds = activeSellers
+      .filter(s => (s.rating || 0) >= 4)
+      .map(s => s._id);
+    
+    // Calculate offsets for each category based on page
+    const pageOffset = (parseInt(page) - 1) * limitNum;
+    const categoryPage = Math.floor(pageOffset / limitNum) + 1;
+    const categorySkip = (categoryPage - 1) * limitNum;
+    
+    // Get products with consistent ordering per page
+    let newProducts = [];
+    let highRatedProducts = [];
+    let randomProducts = [];
+    
+    // 1. Get new products (consistent sort by createdAt)
+    if (newCount > 0) {
+      newProducts = await Product.find({ ...query, createdAt: { $gte: oneWeekAgo } })
+        .sort({ createdAt: -1 })
+        .skip(categorySkip)
+        .limit(newCount)
+        .lean();
     }
+    
+    // 2. Get high-rated seller products
+    if (highRatedCount > 0 && highRatedSellerIds.length > 0) {
+      const existingIds = newProducts.map(p => p._id);
+      highRatedProducts = await Product.find({ 
+        ...query, 
+        seller: { $in: highRatedSellerIds },
+        _id: { $nin: existingIds }
+      })
+        .sort({ rating: -1, createdAt: -1 })
+        .skip(categorySkip)
+        .limit(highRatedCount)
+        .lean();
+    }
+    
+    // 3. Get random products (using deterministic seed for pagination)
+    if (randomCount > 0) {
+      const existingIds = [...newProducts.map(p => p._id), ...highRatedProducts.map(p => p._id)];
+      // Use deterministic random based on page number for consistent pagination
+      randomProducts = await Product.aggregate([
+        { $match: { ...query, _id: { $nin: existingIds } } },
+        { $sample: { size: randomCount + (pageOffset * 2) } } // Get extra for offset
+      ]);
+      // Apply offset manually
+      randomProducts = randomProducts.slice(pageOffset, pageOffset + randomCount);
+    }
+    
+    // Combine and interleave consistently based on page
+    let allSelected = [];
+    const maxLen = Math.max(newProducts.length, highRatedProducts.length, randomProducts.length);
+    
+    for (let i = 0; i < maxLen; i++) {
+      if (newProducts[i]) allSelected.push(newProducts[i]);
+      if (highRatedProducts[i]) allSelected.push(highRatedProducts[i]);
+      if (randomProducts[i]) allSelected.push(randomProducts[i]);
+    }
+    
+    // Use deterministic shuffle based on page number (same shuffle for same page)
+    const seed = parseInt(page);
+    const shuffled = deterministicShuffle(allSelected, seed);
+    
+    // Attach seller data
+    const products = shuffled.map(product => ({
+      ...product,
+      seller: sellerMap.get(product.seller.toString())
+    }));
 
     const result = {
-      success: true, products,
-      pagination: { total, page: parseInt(page), pages: Math.ceil(total / limit), limit: parseInt(limit) }
+      success: true,
+      products,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limitNum),
+        limit: limitNum
+      }
     };
 
-   await cache.set(cacheKey, result, 30); // cache public product list for 30 s
+    await cache.set(cacheKey, result, 30);
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+// Helper function for deterministic shuffling
+function deterministicShuffle(array, seed) {
+  const shuffled = [...array];
+  let currentIndex = shuffled.length;
+  let random;
+  
+  while (currentIndex !== 0) {
+    // Use seed to generate consistent random numbers
+    const x = Math.sin(seed + currentIndex) * 10000;
+    random = Math.floor((x - Math.floor(x)) * currentIndex);
+    currentIndex--;
+    
+    [shuffled[currentIndex], shuffled[random]] = [shuffled[random], shuffled[currentIndex]];
+  }
+  
+  return shuffled;
+}
 
 // ─── GET /api/products/admin/all — admin ────────────────────────────────────
 router.get('/admin/all', protect, async (req, res) => {
