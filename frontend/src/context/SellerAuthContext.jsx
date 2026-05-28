@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const SellerAuthContext = createContext(null);
 
-const sellerApi = axios.create({ baseURL: '/api' });
+const sellerApi = axios.create({ baseURL: 'https://lens-university-market-place-alpha.vercel.app/api' });
 
 export const SellerAuthProvider = ({ children }) => {
   const [seller, setSeller]             = useState(null);
