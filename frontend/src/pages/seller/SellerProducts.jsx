@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Pencil, Clock } from 'lucide-react';
+import { Plus, Pencil, Clock , Trash2} from 'lucide-react';
 import SellerLayout from '../../components/seller/SellerLayout';
 import Pagination from '../../components/shared/Pagination';
 import { uploadToCloudinary } from '../../utils/cloudinary';
+import api from '../../utils/api';
 import { CATEGORIES_NO_ALL, CATEGORY_ICONS } from '../../utils/constants';
 import { useSellerAuth } from '../../context/SellerAuthContext';
 import axios from 'axios';
@@ -40,10 +41,10 @@ const ProductModal = ({ product, onClose, onSaved, token }) => {
     setLoading(true); setError('');
     try {
       if (isEdit) {
-        await axios.put(`https://lens-university-market-place-alpha.vercel.app/api/seller/products/${product._id}`, form, { headers });
+        await axios.put(`/api/seller/products/${product._id}`, form, { headers });
         toast.success('Product updated!');
       } else {
-        await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller/products', form, { headers });
+        await axios.post('/api/seller/products', form, { headers });
         toast.success('Product posted!');
       }
       onSaved(); onClose();
@@ -131,6 +132,7 @@ const ExpiryBadge = ({ expires_at }) => {
 
 const SellerProducts = () => {
   const { seller } = useSellerAuth();
+  const [deleteId, setDeleteId]   = useState(null);
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -141,7 +143,7 @@ const SellerProducts = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`https://lens-university-market-place-alpha.vercel.app/api/seller/products?page=${page}&limit=10`, {
+      const res = await axios.get(`/api/seller/products?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(res.data.products);
@@ -151,6 +153,12 @@ const SellerProducts = () => {
   }, [page, token]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  
+  const handleDelete = async (id) => {
+    try { await api.delete(`/products/seller/${id}`); toast.success('Product deleted'); fetchProducts(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Delete failed'); }
+    finally { setDeleteId(null); }
+  };
 
   if (seller && !seller.isApproved) {
     return (
@@ -216,6 +224,8 @@ const SellerProducts = () => {
                           <button className="btn btn-outline btn-sm" onClick={() => setModal(p)}>
                             <Pencil size={13} /> Edit
                           </button>
+                          
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteId(p._id)}><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -235,6 +245,20 @@ const SellerProducts = () => {
             token={token}
           />
         )}
+        
+        
+      {deleteId && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDeleteId(null)}>
+          <div className="modal" style={{ maxWidth:400 }}>
+            <div className="modal-header"><h3>Confirm Delete</h3></div>
+            <div className="modal-body"><p style={{ fontSize:'0.9rem' }}>Delete this product permanently? </p></div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setDeleteId(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(deleteId)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </SellerLayout>
   );
