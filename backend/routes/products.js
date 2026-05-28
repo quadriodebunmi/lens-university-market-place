@@ -87,18 +87,20 @@ const cleanExpired = async () => {
 //   }
 // });
 
-// ─── GET /api/products — public (Smart TikTok Mix) ─────────────────────────
-// ─── GET /api/products — public (Smart TikTok Mix with Pagination) ─────────
+
+// ─── GET /api/products — public (TikTok Smart Mix with sort options) ────────
 router.get('/', async (req, res) => {
   try {
     await cleanExpired();
 
     const {
       page = 1, limit = 12,
+      sort = 'tiktokScore',  // DEFAULT is now tiktokScore
+      order = 'desc',
       category, search, seller, minPrice, maxPrice
     } = req.query;
 
-    const cacheKey = `products:mix:${JSON.stringify(req.query)}`;
+    const cacheKey = `products:list:${JSON.stringify(req.query)}`;
     const cached = await cache.get(cacheKey);
     if (cached) return res.json(cached);
 
@@ -136,86 +138,127 @@ router.get('/', async (req, res) => {
 
     const total = await Product.countDocuments(query);
     const limitNum = parseInt(limit);
-    const skip = (parseInt(page) - 1) * limitNum;
     
-    // Define ratios (40% new, 40% high-rated, 20% random)
-    const newCount = Math.floor(limitNum * 0.4);
-    const highRatedCount = Math.floor(limitNum * 0.4);
-    const randomCount = limitNum - newCount - highRatedCount;
+    let products = [];
     
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const highRatedSellerIds = activeSellers
-      .filter(s => (s.rating || 0) >= 4)
-      .map(s => s._id);
-    
-    // Calculate offsets for each category based on page
-    const pageOffset = (parseInt(page) - 1) * limitNum;
-    const categoryPage = Math.floor(pageOffset / limitNum) + 1;
-    const categorySkip = (categoryPage - 1) * limitNum;
-    
-    // Get products with consistent ordering per page
-    let newProducts = [];
-    let highRatedProducts = [];
-    let randomProducts = [];
-    
-    // 1. Get new products (consistent sort by createdAt)
-    if (newCount > 0) {
-      newProducts = await Product.find({ ...query, createdAt: { $gte: oneWeekAgo } })
-        .sort({ createdAt: -1 })
-        .skip(categorySkip)
-        .limit(newCount)
-        .lean();
+    // If sorting by TikTok Smart Mix (default)
+    if (sort === 'tiktokScore') {
+      const skip = (parseInt(page) - 1) * limitNum;
+      
+      // Define ratios (40% new, 40% high-rated, 20% random)
+      const newCount = Math.floor(limitNum * 0.4);
+      const highRatedCount = Math.floor(limitNum * 0.4);
+      const randomCount = limitNum - newCount - highRatedCount;
+      
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const highRatedSellerIds = activeSellers
+        .filter(s => (s.rating || 0) >= 4)
+        .map(s => s._id);
+      
+      // Calculate offsets for each category based on page
+      const pageOffset = (parseInt(page) - 1) * limitNum;
+      const categoryPage = Math.floor(pageOffset / limitNum) + 1;
+      const categorySkip = (categoryPage - 1) * limitNum;
+      
+      let newProducts = [];
+      let highRatedProducts = [];
+      let randomProducts = [];
+      
+      // 1. Get new products (consistent sort by createdAt)
+      if (newCount > 0) {
+        newProducts = await Product.find({ ...query, createdAt: { $gte: oneWeekAgo } })
+          .sort({ createdAt: -1 })
+          .skip(categorySkip)
+          .limit(newCount)
+          .lean();
+      }
+      
+      // 2. Get high-rated seller products
+      if (highRatedCount > 0 && highRatedSellerIds.length > 0) {
+        const existingIds = newProducts.map(p => p._id);
+        highRatedProducts = await Product.find({ 
+          ...query, 
+          seller: { $in: highRatedSellerIds },
+          _id: { $nin: existingIds }
+        })
+          .sort({ createdAt: -1 })
+          .skip(categorySkip)
+          .limit(highRatedCount)
+          .lean();
+      }
+      
+      // 3. Get random products
+      if (randomCount > 0) {
+        const existingIds = [...newProducts.map(p => p._id), ...highRatedProducts.map(p => p._id)];
+        randomProducts = await Product.aggregate([
+          { $match: { ...query, _id: { $nin: existingIds } } },
+          { $sample: { size: randomCount + (pageOffset * 2) } }
+        ]);
+        randomProducts = randomProducts.slice(pageOffset, pageOffset + randomCount);
+      }
+      
+      // Combine and interleave
+      let allSelected = [];
+      const maxLen = Math.max(newProducts.length, highRatedProducts.length, randomProducts.length);
+      
+      for (let i = 0; i < maxLen; i++) {
+        if (newProducts[i]) allSelected.push(newProducts[i]);
+        if (highRatedProducts[i]) allSelected.push(highRatedProducts[i]);
+        if (randomProducts[i]) allSelected.push(randomProducts[i]);
+      }
+      
+      // Deterministic shuffle
+      const seed = parseInt(page);
+      const shuffled = deterministicShuffle(allSelected, seed);
+      
+      products = shuffled;
+    } 
+    // If sorting by createdAt, price, or rating (non-TikTok sorts)
+    else {
+      if (sort === 'rating') {
+        // Sort by seller rating
+        products = await Product.aggregate([
+          { $match: query },
+          {
+            $lookup: {
+              from: 'sellers',
+              localField: 'seller',
+              foreignField: '_id',
+              as: 'sellerData'
+            }
+          },
+          { $unwind: '$sellerData' },
+          { $sort: { 'sellerData.rating': order === 'asc' ? 1 : -1 } },
+          { $skip: (parseInt(page) - 1) * limitNum },
+          { $limit: limitNum },
+          {
+            $project: {
+              sellerData: 0
+            }
+          }
+        ]);
+      } else {
+        // Normal sorting (createdAt, price, etc.)
+        const sortObj = {};
+        sortObj[sort] = order === 'asc' ? 1 : -1;
+        
+        products = await Product.find(query)
+          .sort(sortObj)
+          .skip((parseInt(page) - 1) * limitNum)
+          .limit(limitNum)
+          .lean();
+      }
     }
-    
-    // 2. Get high-rated seller products
-    if (highRatedCount > 0 && highRatedSellerIds.length > 0) {
-      const existingIds = newProducts.map(p => p._id);
-      highRatedProducts = await Product.find({ 
-        ...query, 
-        seller: { $in: highRatedSellerIds },
-        _id: { $nin: existingIds }
-      })
-        .sort({ rating: -1, createdAt: -1 })
-        .skip(categorySkip)
-        .limit(highRatedCount)
-        .lean();
-    }
-    
-    // 3. Get random products (using deterministic seed for pagination)
-    if (randomCount > 0) {
-      const existingIds = [...newProducts.map(p => p._id), ...highRatedProducts.map(p => p._id)];
-      // Use deterministic random based on page number for consistent pagination
-      randomProducts = await Product.aggregate([
-        { $match: { ...query, _id: { $nin: existingIds } } },
-        { $sample: { size: randomCount + (pageOffset * 2) } } // Get extra for offset
-      ]);
-      // Apply offset manually
-      randomProducts = randomProducts.slice(pageOffset, pageOffset + randomCount);
-    }
-    
-    // Combine and interleave consistently based on page
-    let allSelected = [];
-    const maxLen = Math.max(newProducts.length, highRatedProducts.length, randomProducts.length);
-    
-    for (let i = 0; i < maxLen; i++) {
-      if (newProducts[i]) allSelected.push(newProducts[i]);
-      if (highRatedProducts[i]) allSelected.push(highRatedProducts[i]);
-      if (randomProducts[i]) allSelected.push(randomProducts[i]);
-    }
-    
-    // Use deterministic shuffle based on page number (same shuffle for same page)
-    const seed = parseInt(page);
-    const shuffled = deterministicShuffle(allSelected, seed);
     
     // Attach seller data
-    const products = shuffled.map(product => ({
+    const productsWithSellers = products.map(product => ({
       ...product,
       seller: sellerMap.get(product.seller.toString())
     }));
 
     const result = {
       success: true,
-      products,
+      products: productsWithSellers,
       pagination: {
         total,
         page: parseInt(page),
@@ -238,7 +281,6 @@ function deterministicShuffle(array, seed) {
   let random;
   
   while (currentIndex !== 0) {
-    // Use seed to generate consistent random numbers
     const x = Math.sin(seed + currentIndex) * 10000;
     random = Math.floor((x - Math.floor(x)) * currentIndex);
     currentIndex--;
@@ -363,9 +405,8 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
-
 // ─── DELETE /api/products/seller/:id — admin seller ───────────────────────────────────
-router.delete('/seller/:id', async (req, res) => {
+router.delete('/seller/:id', protectSeller, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
@@ -375,5 +416,4 @@ router.delete('/seller/:id', async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 export default router;
