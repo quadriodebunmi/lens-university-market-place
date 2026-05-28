@@ -141,7 +141,7 @@ const SellerProducts = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/seller/products?page=${page}&limit=10`, {
+      const res = await axios.get(`https://lens-university-market-place-alpha.vercel.app/api/seller/products?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(res.data.products);
