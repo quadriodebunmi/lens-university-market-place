@@ -20,7 +20,11 @@ const sellerSchema = new mongoose.Schema({
   whatsapp:            { type: String, default: '' },
   isActive:            { type: Boolean, default: true },
   isApproved:          { type: Boolean, default: false },
-  
+  slug: {
+  type: String,
+  unique: true,
+  sparse: true  // Allows multiple nulls
+  },
   // Token tracking on the seller — single source of truth
   token_expires_at:       { type: Date, default: null },
   token_duration_hours:   { type: Number, default: null },
