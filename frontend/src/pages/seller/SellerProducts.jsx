@@ -152,7 +152,7 @@ const SellerProducts = () => {
     finally { setLoading(false); }
   }, [page, token]);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+//  useEffect(() => { fetchProducts(); }, [fetchProducts]);
   
   const handleDelete = async (id) => {
     try { await api.delete(`/products/seller/${id}`); toast.success('Product deleted'); fetchProducts(); }
