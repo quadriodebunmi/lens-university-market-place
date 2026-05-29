@@ -41,10 +41,10 @@ const ProductModal = ({ product, onClose, onSaved, token }) => {
     setLoading(true); setError('');
     try {
       if (isEdit) {
-        await axios.put(`/api/seller/products/${product._id}`, form, { headers });
+        await axios.put(`https://lens-university-market-place-alpha.vercel.app/api/seller/products/${product._id}`, form, { headers });
         toast.success('Product updated!');
       } else {
-        await axios.post('/api/seller/products', form, { headers });
+        await axios.post('https://lens-university-market-place-alpha.vercel.app/api/seller/products', form, { headers });
         toast.success('Product posted!');
       }
       onSaved(); onClose();
@@ -143,7 +143,7 @@ const SellerProducts = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/seller/products?page=${page}&limit=10`, {
+      const res = await axios.get(`https://lens-university-market-place-alpha.vercel.app/api/seller/products?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(res.data.products);
@@ -152,7 +152,7 @@ const SellerProducts = () => {
     finally { setLoading(false); }
   }, [page, token]);
 
-//  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+ useEffect(() => { fetchProducts(); }, [fetchProducts]);
   
   const handleDelete = async (id) => {
     try { await api.delete(`/products/seller/${id}`); toast.success('Product deleted'); fetchProducts(); }
