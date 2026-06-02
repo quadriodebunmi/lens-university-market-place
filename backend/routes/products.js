@@ -89,13 +89,14 @@ const cleanExpired = async () => {
 
 
 // ─── GET /api/products — public (TikTok Smart Mix with sort options) ────────
+
 router.get('/', async (req, res) => {
   try {
     await cleanExpired();
 
     const {
       page = 1, limit = 12,
-      sort = 'tiktokScore',  // DEFAULT is now tiktokScore
+      sort = 'tiktokScore',
       order = 'desc',
       category, search, seller, minPrice, maxPrice
     } = req.query;
@@ -113,8 +114,8 @@ router.get('/', async (req, res) => {
 
     const activeSellersIds = activeSellers.map(s => s._id);
     const sellerMap = new Map();
-    activeSellers.forEach(seller => {
-      sellerMap.set(seller._id.toString(), seller);
+    activeSellers.forEach(s => {
+      sellerMap.set(s._id.toString(), s);
     });
 
     const query = {
@@ -124,7 +125,9 @@ router.get('/', async (req, res) => {
 
     if (category && category !== 'All') query.category = category;
     if (seller) {
-      query.seller = activeSellersIds.includes(seller) ? seller : { $in: [] };
+      // FIX: activeSellersIds is an array of ObjectIds, use .toString() comparison
+      const isActive = activeSellersIds.some(id => id.toString() === seller);
+      query.seller = isActive ? seller : { $in: [] };
     }
     if (minPrice || maxPrice) {
       query.price = {};
@@ -138,85 +141,88 @@ router.get('/', async (req, res) => {
 
     const total = await Product.countDocuments(query);
     const limitNum = parseInt(limit);
-    
+    const pageNum = parseInt(page);
+
     let products = [];
-    
-    // If sorting by TikTok Smart Mix (default)
+
     if (sort === 'tiktokScore') {
-      const skip = (parseInt(page) - 1) * limitNum;
-      
-      // Define ratios (40% new, 40% high-rated, 20% random)
+      // FIX: Fetch a larger pool of products and paginate from it,
+      // instead of running 3 separate paginated queries that cause duplicates.
+      const POOL_SIZE = 200; // Fetch enough to cover multiple pages
+
       const newCount = Math.floor(limitNum * 0.4);
       const highRatedCount = Math.floor(limitNum * 0.4);
       const randomCount = limitNum - newCount - highRatedCount;
-      
+
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       const highRatedSellerIds = activeSellers
         .filter(s => (s.rating || 0) >= 4)
         .map(s => s._id);
-      
-      // Calculate offsets for each category based on page
-      const pageOffset = (parseInt(page) - 1) * limitNum;
-      const categoryPage = Math.floor(pageOffset / limitNum) + 1;
-      const categorySkip = (categoryPage - 1) * limitNum;
-      
+
+      // 1. Fetch new products pool (no per-page skip here)
       let newProducts = [];
-      let highRatedProducts = [];
-      let randomProducts = [];
-      
-      // 1. Get new products (consistent sort by createdAt)
       if (newCount > 0) {
         newProducts = await Product.find({ ...query, createdAt: { $gte: oneWeekAgo } })
           .sort({ createdAt: -1 })
-          .skip(categorySkip)
-          .limit(newCount)
+          .limit(Math.ceil(POOL_SIZE * 0.4))
           .lean();
       }
-      
-      // 2. Get high-rated seller products
+
+      // 2. Fetch high-rated seller products pool (exclude already fetched)
+      let highRatedProducts = [];
       if (highRatedCount > 0 && highRatedSellerIds.length > 0) {
         const existingIds = newProducts.map(p => p._id);
-        highRatedProducts = await Product.find({ 
-          ...query, 
+        highRatedProducts = await Product.find({
+          ...query,
           seller: { $in: highRatedSellerIds },
           _id: { $nin: existingIds }
         })
           .sort({ createdAt: -1 })
-          .skip(categorySkip)
-          .limit(highRatedCount)
+          .limit(Math.ceil(POOL_SIZE * 0.4))
           .lean();
       }
-      
-      // 3. Get random products
+
+      // 3. Fetch random products pool (exclude already fetched)
+      let randomProducts = [];
       if (randomCount > 0) {
-        const existingIds = [...newProducts.map(p => p._id), ...highRatedProducts.map(p => p._id)];
+        const existingIds = [
+          ...newProducts.map(p => p._id),
+          ...highRatedProducts.map(p => p._id)
+        ];
         randomProducts = await Product.aggregate([
           { $match: { ...query, _id: { $nin: existingIds } } },
-          { $sample: { size: randomCount + (pageOffset * 2) } }
+          { $sample: { size: Math.ceil(POOL_SIZE * 0.2) } }
         ]);
-        randomProducts = randomProducts.slice(pageOffset, pageOffset + randomCount);
       }
-      
-      // Combine and interleave
-      let allSelected = [];
+
+      // Interleave all three pools
+      let interleaved = [];
       const maxLen = Math.max(newProducts.length, highRatedProducts.length, randomProducts.length);
-      
       for (let i = 0; i < maxLen; i++) {
-        if (newProducts[i]) allSelected.push(newProducts[i]);
-        if (highRatedProducts[i]) allSelected.push(highRatedProducts[i]);
-        if (randomProducts[i]) allSelected.push(randomProducts[i]);
+        if (newProducts[i]) interleaved.push(newProducts[i]);
+        if (highRatedProducts[i]) interleaved.push(highRatedProducts[i]);
+        if (randomProducts[i]) interleaved.push(randomProducts[i]);
       }
-      
-      // Deterministic shuffle
-      const seed = parseInt(page);
-      const shuffled = deterministicShuffle(allSelected, seed);
-      
-      products = shuffled;
-    } 
-    // If sorting by createdAt, price, or rating (non-TikTok sorts)
-    else {
+
+      // FIX: Deduplicate by _id before shuffling
+      const seen = new Set();
+      interleaved = interleaved.filter(p => {
+        const id = p._id.toString();
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+
+      // Deterministic shuffle using a fixed seed (not page-dependent for the pool,
+      // so that page 2 is a slice of the same shuffled pool, not a re-shuffle)
+      const shuffled = deterministicShuffle(interleaved, 42);
+
+      // FIX: Paginate by slicing the shuffled pool
+      const skip = (pageNum - 1) * limitNum;
+      products = shuffled.slice(skip, skip + limitNum);
+
+    } else {
       if (sort === 'rating') {
-        // Sort by seller rating
         products = await Product.aggregate([
           { $match: query },
           {
@@ -229,27 +235,22 @@ router.get('/', async (req, res) => {
           },
           { $unwind: '$sellerData' },
           { $sort: { 'sellerData.rating': order === 'asc' ? 1 : -1 } },
-          { $skip: (parseInt(page) - 1) * limitNum },
+          { $skip: (pageNum - 1) * limitNum },
           { $limit: limitNum },
-          {
-            $project: {
-              sellerData: 0
-            }
-          }
+          { $project: { sellerData: 0 } }
         ]);
       } else {
-        // Normal sorting (createdAt, price, etc.)
         const sortObj = {};
         sortObj[sort] = order === 'asc' ? 1 : -1;
-        
+
         products = await Product.find(query)
           .sort(sortObj)
-          .skip((parseInt(page) - 1) * limitNum)
+          .skip((pageNum - 1) * limitNum)
           .limit(limitNum)
           .lean();
       }
     }
-    
+
     // Attach seller data
     const productsWithSellers = products.map(product => ({
       ...product,
@@ -261,7 +262,7 @@ router.get('/', async (req, res) => {
       products: productsWithSellers,
       pagination: {
         total,
-        page: parseInt(page),
+        page: pageNum,
         pages: Math.ceil(total / limitNum),
         limit: limitNum
       }
@@ -278,16 +279,14 @@ router.get('/', async (req, res) => {
 function deterministicShuffle(array, seed) {
   const shuffled = [...array];
   let currentIndex = shuffled.length;
-  let random;
-  
+
   while (currentIndex !== 0) {
     const x = Math.sin(seed + currentIndex) * 10000;
-    random = Math.floor((x - Math.floor(x)) * currentIndex);
+    const random = Math.floor((x - Math.floor(x)) * currentIndex);
     currentIndex--;
-    
     [shuffled[currentIndex], shuffled[random]] = [shuffled[random], shuffled[currentIndex]];
   }
-  
+
   return shuffled;
 }
 
