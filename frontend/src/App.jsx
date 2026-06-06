@@ -2,6 +2,7 @@ import {ScrollRestoration, BrowserRouter, Routes, Route, Navigate, useLocation }
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SellerAuthProvider, useSellerAuth } from './context/SellerAuthContext';
+import PWAInstallPrompt from './components/shared/InstallPrompt';
 
 
 // Public pages
@@ -71,6 +72,8 @@ function App() {
         <BrowserRouter>
         <ScrollToTop/>
           <Toaster position="top-right" toastOptions={toastOpts} />
+           {/* PWA install banner — shown on all pages */}
+          <PWAInstallPrompt />
           <Routes>
             {/* ── Public ── */}
             <Route path="/"                   element={<HomePage />} />

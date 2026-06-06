@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, Phone, Globe, Instagram, ArrowLeft, Package } from 'lucide-react';
+import { Star, Phone, Globe, Instagram, ArrowLeft, Package, X, ZoomIn } from 'lucide-react';
 import Navbar from '../../components/shared/Navbar';
 import Footer from '../../components/shared/Footer';
 import ProductCard from '../../components/public/ProductCard';
@@ -30,12 +30,40 @@ const Stars = ({ rating }) => (
   </div>
 );
 
+/* ── Lightbox ── */
+const ImageLightbox = ({ src, alt, onClose }) => {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <div className="lightbox-backdrop" onClick={onClose}>
+      <button className="lightbox-close" onClick={onClose} aria-label="Close preview">
+        <X size={22} />
+      </button>
+      <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+        <img src={src} alt={alt} className="lightbox-img" />
+      </div>
+    </div>
+  );
+};
+
 const SellerDetailPage = () => {
   const { id } = useParams();
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
+  const [lightbox, setLightbox] = useState(null);
+
+  const openLightbox = useCallback((src, alt) => setLightbox({ src, alt }), []);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
 
   useEffect(() => {
     api.get(`/sellers/user/${id}`)
@@ -73,28 +101,55 @@ const SellerDetailPage = () => {
     <>
       <Navbar />
       <div className="seller-detail">
-        {/* Banner */}
+
+        {/* Banner — overlay uses pointer-events:none so clicks reach the button */}
         <div className="seller-detail-banner">
           {seller.banner ? (
-            <img src={seller.banner} alt={seller.store_name} />
+            <>
+              <img src={seller.banner} alt={seller.store_name} />
+              {/* Overlay is purely visual, non-blocking */}
+              <div className="seller-detail-banner-overlay" style={{ pointerEvents: 'none' }} />
+              {/* Click trigger sits on top of everything */}
+              <button
+                className="banner-lightbox-trigger"
+                onClick={() => openLightbox(seller.banner, seller.store_name)}
+                aria-label="View banner image"
+              >
+                <span className="image-zoom-hint">
+                  <ZoomIn size={18} />
+                  View
+                </span>
+              </button>
+            </>
           ) : (
             <div className="seller-detail-banner-placeholder">
               <span>{CATEGORY_ICONS[seller.category] || '🏪'}</span>
             </div>
           )}
-          <div className="seller-detail-banner-overlay" />
         </div>
 
         {/* Profile section */}
         <div className="container">
           <div className="seller-detail-profile">
+
+            {/* Avatar */}
             <div className="seller-detail-avatar">
               {seller.profile_picture ? (
-                <img src={seller.profile_picture} alt={seller.username} />
+                <button
+                  className="avatar-lightbox-trigger"
+                  onClick={() => openLightbox(seller.profile_picture, seller.username)}
+                  aria-label="View profile picture"
+                >
+                  <img src={seller.profile_picture} alt={seller.username} />
+                  <span className="avatar-zoom-hint">
+                    <ZoomIn size={16} />
+                  </span>
+                </button>
               ) : (
                 <span>{seller.store_name?.[0]?.toUpperCase()}</span>
               )}
             </div>
+
             <div className="seller-detail-info">
               <div className="seller-detail-meta">
                 <span className="badge badge-gold">{seller.category}</span>
@@ -104,6 +159,7 @@ const SellerDetailPage = () => {
               <p className="seller-detail-username">@{seller.username}</p>
               {seller.description && <p className="seller-detail-desc">{seller.description}</p>}
             </div>
+
             <div className="seller-detail-contacts">
               {seller.contact && (
                 <a href={`tel:${seller.contact}`} className="contact-item">
@@ -113,21 +169,19 @@ const SellerDetailPage = () => {
               )}
               {seller.whatsapp && (
                 <a href={`https://wa.me/${seller.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="contact-item wa-contact">
-                
                   <WhatsAppIcon />
                   <span>WhatsApp</span>
                 </a>
               )}
               {seller.website && (
-                <a href={`https://${seller.website}`} target="_blank"  className="contact-item">
+                <a href={`https://${seller.website}`} target="_blank" className="contact-item">
                   <Globe size={16} />
                   <span>Website</span>
                 </a>
               )}
               {seller.social_media_handle && (
                 <a href={`https://tiktok.com/@${seller.social_media_handle}`} target="_blank" rel="noreferrer" className="contact-item">
-                 <TikTokIcon/>
-                  
+                  <TikTokIcon />
                   <span>{seller.social_media_handle}</span>
                 </a>
               )}
@@ -146,7 +200,6 @@ const SellerDetailPage = () => {
             </Link>
           </div>
 
-          {/* Category filter */}
           {categories.length > 1 && (
             <div className="category-pills" style={{ marginBottom: '1.5rem' }}>
               {categories.map(cat => (
@@ -174,6 +227,15 @@ const SellerDetailPage = () => {
           )}
         </div>
       </div>
+
+      {lightbox && (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={closeLightbox}
+        />
+      )}
+
       <Footer />
     </>
   );
