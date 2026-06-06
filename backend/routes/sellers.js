@@ -40,22 +40,22 @@ router.get('/', async (req, res) => {
     const cached = await cache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const { 
-      page = 1, 
-      limit = 12, 
-      sort = 'tiktokScore',  // DEFAULT is now tiktokScore
-      order = 'desc', 
-      category, 
-      search, 
-      minRating 
+    const {
+      page = 1,
+      limit = 12,
+      sort = 'tiktokScore',
+      order = 'desc',
+      category,
+      search,
+      minRating
     } = req.query;
 
-    const query = { 
-      isActive: true, 
+    const query = {
+      isActive: true,
       isApproved: true,
-    //  token_expires_at: { $gt: new Date() }
+      // token_expires_at: { $gt: new Date() }
     };
-    
+
     if (category && category !== 'All') query.category = category;
     if (minRating) query.rating = { $gte: parseFloat(minRating) };
     if (search) query.$or = [
@@ -65,114 +65,117 @@ router.get('/', async (req, res) => {
     ];
 
     const limitNum = parseInt(limit);
+    const pageNum = parseInt(page);
     const total = await Seller.countDocuments(query);
-    
+
     let sellers;
-    
-    // If sorting by TikTok Smart Mix (default)
+
     if (sort === 'tiktokScore') {
-      const skip = (parseInt(page) - 1) * limitNum;
-      
-      // Define ratios (40% top-rated, 40% new, 20% random)
+      // FIX: Fetch a large pool once and paginate by slicing,
+      // instead of 3 separate paginated queries that cause duplicates.
+      const POOL_SIZE = 200;
+
       const topRatedCount = Math.floor(limitNum * 0.4);
       const newCount = Math.floor(limitNum * 0.4);
       const randomCount = limitNum - topRatedCount - newCount;
-      
+
       const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      
-      const categoryPage = Math.floor(skip / limitNum) + 1;
-      const categorySkip = (categoryPage - 1) * limitNum;
-      
+
+      // 1. Fetch top-rated sellers pool (no per-page skip)
       let topRatedSellers = [];
-      let newSellers = [];
-      let randomSellers = [];
-      
-      // 1. Top-rated sellers
       if (topRatedCount > 0) {
-        topRatedSellers = await Seller.find({ 
-          ...query, 
+        topRatedSellers = await Seller.find({
+          ...query,
           rating: { $gte: 4 }
         })
           .select('-password')
           .sort({ rating: -1, createdAt: -1 })
-          .skip(categorySkip)
-          .limit(topRatedCount)
+          .limit(Math.ceil(POOL_SIZE * 0.4))
           .lean();
       }
-      
-      // 2. New sellers
+
+      // 2. Fetch new sellers pool (exclude already fetched)
+      let newSellers = [];
       if (newCount > 0) {
         const existingIds = topRatedSellers.map(s => s._id);
-        newSellers = await Seller.find({ 
-          ...query, 
+        newSellers = await Seller.find({
+          ...query,
           createdAt: { $gte: oneMonthAgo },
           _id: { $nin: existingIds }
         })
           .select('-password')
           .sort({ createdAt: -1 })
-          .skip(categorySkip)
-          .limit(newCount)
+          .limit(Math.ceil(POOL_SIZE * 0.4))
           .lean();
       }
-      
-      // 3. Random discovery sellers
+
+      // 3. Fetch random sellers pool (exclude already fetched)
+      let randomSellers = [];
       if (randomCount > 0) {
         const existingIds = [
           ...topRatedSellers.map(s => s._id),
           ...newSellers.map(s => s._id)
         ];
-        
         randomSellers = await Seller.aggregate([
           { $match: { ...query, _id: { $nin: existingIds } } },
-          { $sample: { size: randomCount + (skip * 2) } }
+          { $sample: { size: Math.ceil(POOL_SIZE * 0.2) } }
         ]);
-        
-        randomSellers = randomSellers.slice(skip, skip + randomCount);
+        // Strip password from aggregation results
         randomSellers = randomSellers.map(({ password, ...seller }) => seller);
       }
-      
-      // Combine and interleave
-      let allSelected = [];
+
+      // Interleave all three pools
+      let interleaved = [];
       const maxLen = Math.max(topRatedSellers.length, newSellers.length, randomSellers.length);
-      
       for (let i = 0; i < maxLen; i++) {
-        if (topRatedSellers[i]) allSelected.push(topRatedSellers[i]);
-        if (newSellers[i]) allSelected.push(newSellers[i]);
-        if (randomSellers[i]) allSelected.push(randomSellers[i]);
+        if (topRatedSellers[i]) interleaved.push(topRatedSellers[i]);
+        if (newSellers[i]) interleaved.push(newSellers[i]);
+        if (randomSellers[i]) interleaved.push(randomSellers[i]);
       }
-      
-      // Deterministic shuffle
-      const seed = parseInt(page);
-      sellers = deterministicShuffle(allSelected, seed);
-    } 
-    // If sorting by createdAt, rating, or other fields
-    else {
+
+      // FIX: Deduplicate by _id before shuffling
+      const seen = new Set();
+      interleaved = interleaved.filter(s => {
+        const id = s._id.toString();
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+
+      // FIX: Use a fixed seed (not page number) so the pool order is
+      // consistent across pages — then paginate by slicing.
+      const shuffled = deterministicShuffle(interleaved, 42);
+
+      const skip = (pageNum - 1) * limitNum;
+      sellers = shuffled.slice(skip, skip + limitNum);
+
+    } else {
       const sortObj = {};
       sortObj[sort] = order === 'asc' ? 1 : -1;
-      
+
       sellers = await Seller.find(query)
         .select('-password')
         .sort(sortObj)
-        .skip((parseInt(page) - 1) * limitNum)
+        .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
         .lean();
     }
 
-    const result = { 
-      success: true, 
-      sellers, 
-      pagination: { 
-        total, 
-        page: parseInt(page), 
-        pages: Math.ceil(total / limitNum), 
-        limit: limitNum 
-      } 
+    const result = {
+      success: true,
+      sellers,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        limit: limitNum
+      }
     };
-    
+
     await cache.set(cacheKey, result, 60);
     res.json(result);
-  } catch (err) { 
-    res.status(500).json({ success: false, message: err.message }); 
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -180,16 +183,14 @@ router.get('/', async (req, res) => {
 function deterministicShuffle(array, seed) {
   const shuffled = [...array];
   let currentIndex = shuffled.length;
-  let random;
-  
+
   while (currentIndex !== 0) {
     const x = Math.sin(seed + currentIndex) * 10000;
-    random = Math.floor((x - Math.floor(x)) * currentIndex);
+    const random = Math.floor((x - Math.floor(x)) * currentIndex);
     currentIndex--;
-    
     [shuffled[currentIndex], shuffled[random]] = [shuffled[random], shuffled[currentIndex]];
   }
-  
+
   return shuffled;
 }
 
