@@ -70,7 +70,7 @@ const ProductModal = ({ product, onClose }) => {
             </div>
           )}
           <span className="badge badge-gold product-category-badge">{product.category}</span>
-          <ExpiryBadge expires_at={product.expires_at} />
+          
         </div>
 
 
