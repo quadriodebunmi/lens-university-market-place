@@ -9,7 +9,21 @@ const sellerSchema = new mongoose.Schema({
   description:         { type: String, default: '' },
   category: {
     type: String, required: true,
-    enum: ['Electronics','Fashion','Books','Food & Beverages','Health & Beauty','Sports','Home & Living','Services','Art & Crafts','Other']
+    enum: [
+  'Food & Beverages & Cakes',
+  "Jewelry & Accessories",
+  "Clothing",
+  "Shoes",
+  "Perfumes",
+  "Textbooks", 
+  "Electronics", 
+  "Services",
+  "Phones & Accessories", 
+  "Beauty & Skincare", 
+  "Furniture & Home Decor", "Health & Fitness", 
+  "Stationery & Supplies", "Event Tickets", "Art & Design", 
+  "Rentals",
+  'Other']
   },
   rating:              { type: Number, min: 0, max: 5, default: 0 },
   profile_picture:     { type: String, default: '' },
