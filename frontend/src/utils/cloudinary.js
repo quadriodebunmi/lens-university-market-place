@@ -7,7 +7,7 @@ const CLOUDINARY_PRESET = 'finesse';
  */
 export const uploadToCloudinary = async (file) => {
   if (!file) throw new Error('No file selected');
-
+// getting a seller toke verified
   const fd = new FormData();
   fd.append('file', file);
   fd.append('upload_preset', CLOUDINARY_PRESET);

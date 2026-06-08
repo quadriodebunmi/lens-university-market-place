@@ -19,7 +19,7 @@ const DEV = {
   bio2:        `Available for freelance projects, collaborations, and full-time opportunities. If you have an idea you want to bring to life, let's talk.`,
   avatar:      'https://i.postimg.cc/d19GK0gn/IMG-20250622-WA0011.jpg', // put your Cloudinary image URL here e.g. 'https://res.cloudinary.com/...'
   email:       'quadriodebunmi41@gmail.com',
-  whatsapp:    '2347068902982',
+  whatsapp:    '2348077128030',
   github:      'https://github.com/fhiness4',
   tiktok:     'https://tiktok.com/@mr_hello_world',
   linkedin:    'https://www.linkedin.com/in/odebunmi-quadri-094878368',

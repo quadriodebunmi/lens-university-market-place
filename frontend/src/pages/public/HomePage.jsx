@@ -57,7 +57,7 @@ const HomePage = () => {
               and services from our vibrant campus community.
             </p>
             <div className="hero-actions">
-              <Link to="/products" className="btn btn-gold btn-lg">
+              <Link to="/" className="btn btn-gold btn-lg">
                 Browse Products <ArrowRight size={18} />
               </Link>
               <Link to="/sellers" className="btn btn-outline-one btn-lg">
@@ -141,8 +141,8 @@ const HomePage = () => {
               <h2>Want to sell on Lens University Market?</h2>
               <p>Contact our admin team to register your store and start selling today.</p>
             </div>
-            <Link to="/sellers" className="btn btn-gold btn-lg">
-              View All Sellers <ArrowRight size={18} />
+            <Link to="/seller/register" className="btn btn-gold btn-lg">
+              Create a seller account <ArrowRight size={18} />
             </Link>
           </div>
         </section>

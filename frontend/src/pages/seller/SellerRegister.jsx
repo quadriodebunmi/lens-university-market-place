@@ -11,7 +11,7 @@ const SellerRegister = () => {
   const { register } = useSellerAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: '', email: '', password: '', store_name: '', category: 'Electronics',
+    username: '', email: '', password: '', store_name: '', category: 'Food & Beverages & Cakes',
     description: '', contact: '', whatsapp: '', website: '', social_media_handle: '',
     profile_picture: '', banner: ''
   });
@@ -125,7 +125,7 @@ const SellerRegister = () => {
             </div>
             <div className="form-group">
               <label className="form-label">WhatsApp Number</label>
-              <input className="form-control" placeholder="2348012345678 (no +)"
+              <input className="form-control" placeholder="08012345678 (no +)"
                 value={form.whatsapp} onChange={e => set('whatsapp', e.target.value.replace(/\D/g, ''))} />
             </div>
           </div>

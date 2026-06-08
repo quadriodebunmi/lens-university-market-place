@@ -21,15 +21,15 @@ const contactCards = [
   {
     icon: <Phone size={22} />,
     label: 'Call Us',
-    value: '+234 903 461 1394',
-    href: 'tel:+2349034611394',
+    value: '+234 80 7712 8030',
+    href: 'tel:+2348077128030',
     sub: 'Mon – Fri, 8am – 5pm'
   },
   {
     icon: <WhatsAppIcon />,
     label: 'WhatsApp',
     value: 'Chat with us',
-    href: 'https://wa.me/2349034611394?text=Hello%20Lens%20University%20Market%20Admin',
+    href: 'https://wa.me/2348077128030?text=Hello%20Lens%20University%20Market%20Admin',
     sub: 'Quick responses',
     green: true
   },

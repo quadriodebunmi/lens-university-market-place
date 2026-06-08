@@ -9,9 +9,9 @@ const Navbar = () => {
   const close = () => setOpen(false);
 
   const links = [
-    { to: '/',        label: 'Home' },
+    { to: '/home',        label: 'Home' },
     { to: '/sellers', label: 'Sellers' },
-    { to: '/products',label: 'Products' },
+    { to: '/',label: 'Products' },
     { to: '/about',   label: 'About' },
     { to: '/contact', label: 'Contact' },
     { to: '/developer', label: 'Developer' },

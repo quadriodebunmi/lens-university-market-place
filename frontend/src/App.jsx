@@ -76,10 +76,10 @@ function App() {
           <PWAInstallPrompt />
           <Routes>
             {/* ── Public ── */}
-            <Route path="/"                   element={<HomePage />} />
+            <Route path="/home"                   element={<HomePage />} />
             <Route path="/sellers"            element={<SellersPage />} />
             <Route path="/:id"        element={<SellerDetailPage />} />
-            <Route path="/products"           element={<ProductsPage />} />
+            <Route path="/"           element={<ProductsPage />} />
             <Route path="/about"              element={<AboutPage />} />
             <Route path="/contact"            element={<ContactPage />} />
             <Route path="/become-a-seller"    element={<BecomeSellerPage />} />

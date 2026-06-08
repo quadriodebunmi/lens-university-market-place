@@ -29,6 +29,7 @@ const DURATION_OPTIONS = [
   { label: '1 week',   value: 168 },
   { label: '2 weeks',  value: 336 },
   { label: '1 month',  value: 720 },
+  { label: '2 month',  value: 1440 },
 ];
 
 const TokenSection = () => {

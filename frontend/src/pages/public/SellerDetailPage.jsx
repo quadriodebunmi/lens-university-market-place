@@ -168,7 +168,7 @@ const SellerDetailPage = () => {
                 </a>
               )}
               {seller.whatsapp && (
-                <a href={`https://wa.me/${seller.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="contact-item wa-contact">
+                <a href={`https://wa.me/234${seller.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="contact-item wa-contact">
                   <WhatsAppIcon />
                   <span>WhatsApp</span>
                 </a>

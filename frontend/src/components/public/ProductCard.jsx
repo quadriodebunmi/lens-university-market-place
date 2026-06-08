@@ -32,7 +32,7 @@ const ProductModal = ({ product, onClose }) => {
   const icon = CATEGORY_ICONS[product.category] || '📦';
   const waNumber = product.seller?.whatsapp?.replace(/\D/g, '');
   const waLink = waNumber
-    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
+    ? `https://wa.me/234${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
     : null;
 
   // Lock body scroll while modal is open
@@ -132,7 +132,7 @@ const ProductCard = ({ product }) => {
   const icon = CATEGORY_ICONS[product.category] || '📦';
   const waNumber = product.seller?.whatsapp?.replace(/\D/g, '');
   const waLink = waNumber
-    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
+    ? `https://wa.me/234${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
     : null;
 
   return (

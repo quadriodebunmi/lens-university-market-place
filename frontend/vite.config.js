@@ -35,7 +35,7 @@ export default defineConfig({
             name: 'Browse Products',
             short_name: 'Products',
             description: 'See all marketplace products',
-            url: '/products',
+            url: '/',
             icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }],
           },
           {

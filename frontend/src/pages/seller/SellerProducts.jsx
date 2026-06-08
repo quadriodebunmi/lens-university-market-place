@@ -10,7 +10,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import './SellerProducts.css';
 
-const EMPTY = { name: '', description: '', price: '', category: 'Electronics', time_frame: '', product_image: '' };
+const EMPTY = { name: '', description: '', price: '', category: 'Food & Beverages & Cakes', time_frame: '', product_image: '' };
 
 const ProductModal = ({ product, onClose, onSaved, token }) => {
   const isEdit = !!product?._id;
