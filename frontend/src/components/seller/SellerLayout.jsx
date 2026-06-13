@@ -31,7 +31,7 @@ const SellerLayout = ({ children, title }) => {
           <div className="seller-sidebar-brand">
             <ShoppingBag size={18} />
             <div>
-              <span className="sidebar-brand-title">Lens Market</span>
+              <span className="sidebar-brand-title">UMA</span>
               <span className="sidebar-brand-sub">Seller Panel</span>
             </div>
           </div>

@@ -44,18 +44,9 @@ const HomePage = () => {
         <section className="hero">
           <div className="hero-bg-pattern" />
           <div className="container hero-content">
-            <div className="hero-eyebrow">
-              <Star size={14} fill="currentColor" />
-              <span>Lens University Official Marketplace</span>
-            </div>
-            <h1 className="hero-title">
-              Discover, Shop &amp; <br />
-              <span className="hero-title-accent">Support Campus</span>
-            </h1>
-            <p className="hero-desc">
-              The official marketplace for Lens University — browse curated sellers, unique products,
-              and services from our vibrant campus community.
-            </p>
+             <div className="hero-eyebrow"><Star size={14} fill="currentColor" /><span>Universal Market Access</span></div>
+                     <h1 className="hero-title">Discover, Shop &amp; <br /><span className="hero-title-accent">Sell Anywhere</span></h1>
+                     <p className="hero-desc">BuyOnUma — Universal Market Access. Browse curated sellers, unique products, and services from a growing community of buyers and sellers everywhere.</p>
             <div className="hero-actions">
               <Link to="/" className="btn btn-gold btn-lg">
                 Browse Products <ArrowRight size={18} />
@@ -138,8 +129,8 @@ const HomePage = () => {
         <section className="cta-banner">
           <div className="container cta-inner">
             <div>
-              <h2>Want to sell on Lens University Market?</h2>
-              <p>Contact our admin team to register your store and start selling today.</p>
+              <h2>Want to sell on BuyOnUma?</h2>
+              <p>Click the link below to register your store and start selling today.</p>
             </div>
             <Link to="/seller/register" className="btn btn-gold btn-lg">
               Create a seller account <ArrowRight size={18} />

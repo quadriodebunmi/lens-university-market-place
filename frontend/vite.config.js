@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
-        name: 'Lens University Market',
-        short_name: 'LensMarket',
-        description: 'The official campus marketplace for Lens University — browse sellers, products and connect on WhatsApp.',
+        name: 'Buyonuma',
+        short_name: 'buyonuma',
+        description: 'The official marketplace for buyers and sellers — browse sellers, products and connect on WhatsApp.',
         theme_color: '#0d0d0d',
         background_color: '#faf8f3',
         display: 'standalone',

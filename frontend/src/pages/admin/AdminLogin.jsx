@@ -34,13 +34,13 @@ const AdminLogin = () => {
         <div className="login-brand">
           <ShoppingBag size={32} />
           <div>
-            <h1>Lens University</h1>
+            <h1>UMA universal market access</h1>
             <p>Market Admin Panel</p>
           </div>
         </div>
         <div className="login-tagline">
           <blockquote>
-            "Connecting campus sellers with students since day one."
+            "Connecting sellers with buyers since day one."
           </blockquote>
         </div>
         <div className="login-decoration" />

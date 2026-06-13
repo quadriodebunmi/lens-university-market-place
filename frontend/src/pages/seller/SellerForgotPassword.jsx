@@ -97,7 +97,7 @@ const SellerForgotPassword = () => {
       <div className="seller-auth-card fp-card">
         <div className="seller-auth-header">
           <Link to="/" className="seller-auth-logo">
-            <ShoppingBag size={22} /><span>Lens University Market</span>
+            <ShoppingBag size={22} /><span>BuyOnUma</span>
           </Link>
           <h1>Reset Password</h1>
           <p>We'll send a 5-digit code to your registered email</p>

@@ -172,7 +172,7 @@
 
 /* ── View Product button ── */
 .view-product-btn {
-  display: flex;
+  display: block;
   align-items: center;
   justify-content: center;
   gap: 5px;
@@ -181,6 +181,22 @@
   padding: 0.5rem 0.75rem;
   background: transparent;
   border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+.view-productbtn {
+  display: block;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  
+  
+  background: transparent;
   border-radius: var(--radius);
   font-size: 0.8rem;
   font-weight: 600;
@@ -262,7 +278,7 @@
 .product-modal-image {
   position: relative;
   width: 100%;
-  height: 260px auto;        /* fixed — always fully visible */
+  height: auto;        /* fixed — always fully visible */
   flex-shrink: 0;       /* never squish when body content is tall */
   overflow: hidden;
   border-radius: 14px 14px 0 0;

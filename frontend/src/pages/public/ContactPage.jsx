@@ -14,7 +14,7 @@ const contactCards = [
   {
     icon: <Mail size={22} />,
     label: 'Email Us',
-    value: 'marketplacelens@gmail.com',
+    value: 'buyonuma@gmail.com',
     href: 'mailto:marketplacelens@gmail.com',
     sub: 'We reply within 24 hours'
   },
@@ -36,9 +36,9 @@ const contactCards = [
   {
     icon: <MapPin size={22} />,
     label: 'Location',
-    value: 'Lens University Campus',
+    value: 'Offa',
     href: null,
-    sub: 'Admin Block, Ground Floor'
+    sub: 'Navy base area, along ira Road'
   },
 ];
 

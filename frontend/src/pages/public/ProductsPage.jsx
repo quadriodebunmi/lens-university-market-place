@@ -148,7 +148,7 @@ const ProductsPage = () => {
       <div className="page-header">
         <div className="container">
           <p className="section-eyebrow" style={{ color: 'var(--gold)', marginBottom: '0.5rem' }}>
-            Lens University Market
+            BuyOnUma
           </p>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', color: 'var(--white)', marginBottom: '0.5rem' }}>
             All Products

@@ -47,6 +47,7 @@ const SellerRegister = () => {
       toast.success('Account created! Check your email and await admin approval.');
       navigate('/seller/login');
     } catch (err) {
+       toast.error(err.response?.data?.message || 'Registration failed')
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
@@ -58,7 +59,7 @@ const SellerRegister = () => {
       <div className="seller-auth-card seller-auth-card-wide">
         <div className="seller-auth-header">
           <Link to="/" className="seller-auth-logo">
-            <ShoppingBag size={22} /><span>Lens University Market</span>
+            <ShoppingBag size={22} /><span>BUYONUMA</span>
           </Link>
           <h1>Create Seller Account</h1>
           <p>Fill in your store details to get started</p>

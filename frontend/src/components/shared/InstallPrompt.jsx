@@ -78,7 +78,7 @@ const PWAInstallPrompt = () => {
       </div>
 
       <div className="pwa-banner-text">
-        <p className="pwa-banner-title">Install Lens Market</p>
+        <p className="pwa-banner-title">Install Buyonuma</p>
         {showIOS ? (
           <p className="pwa-banner-sub">
             Tap <strong>Share</strong> <span className="ios-share">⎙</span> then{' '}

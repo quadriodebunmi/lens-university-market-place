@@ -22,10 +22,7 @@ const Navbar = () => {
       <div className="container navbar-inner">
         <Link to="/" className="navbar-brand" onClick={close}>
           <ShoppingBag size={20} />
-          <span className="brand-text">
-            <span className="brand-lens">Lens</span>
-            <span className="brand-uni">University</span>
-          </span>
+            <span className="brand-text"><span className="brand-buy">Buy</span><span className="brand-uni">OnUma</span></span>
           <span className="brand-sub">Market</span>
         </Link>
 

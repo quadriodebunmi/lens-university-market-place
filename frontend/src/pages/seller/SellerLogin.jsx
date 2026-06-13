@@ -33,7 +33,7 @@ const SellerLogin = () => {
         <div className="seller-auth-header">
           <Link to="/" className="seller-auth-logo">
             <ShoppingBag size={22} />
-            <span>Lens University Market</span>
+            <span>BuyOnUma</span>
           </Link>
           <h1>Seller Sign In</h1>
           <p>Access your seller dashboard</p>

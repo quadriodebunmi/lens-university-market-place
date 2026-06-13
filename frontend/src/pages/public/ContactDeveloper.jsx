@@ -14,7 +14,7 @@ const TikTokIcon = () => (
 const DEV = {
   name:        'Odebunmi Quadri oyewale',
   title:       'Full-Stack Developer',
-  subtitle:    'Creator of Lens University Market',
+  subtitle:    'Creator of BuyonUma',
   bio:         `A passionate software developer with expertise in building modern web applications. Specialising in React, Node.js and MongoDB, with a focus on clean architecture, great user experiences, and scalable systems. Built the Lens University Market platform from scratch to empower campus commerce.`,
   bio2:        `Available for freelance projects, collaborations, and full-time opportunities. If you have an idea you want to bring to life, let's talk.`,
   avatar:      'https://i.postimg.cc/d19GK0gn/IMG-20250622-WA0011.jpg', // put your Cloudinary image URL here e.g. 'https://res.cloudinary.com/...'

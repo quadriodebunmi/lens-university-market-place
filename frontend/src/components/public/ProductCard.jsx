@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Clock, Star, X, ExternalLink } from 'lucide-react';
 import { CATEGORY_ICONS } from '../../utils/constants';
+import ProductModal from './ProductModal';
+import ProductViewModal from './ProductViewModal';
 import './ProductCard.css';
 
 const WhatsAppIcon = () => (
@@ -11,122 +13,6 @@ const WhatsAppIcon = () => (
   </svg>
 );
 
-const ExpiryBadge = ({ expires_at }) => {
-  if (!expires_at) return null;
-  const diff = new Date(expires_at) - new Date();
-  if (diff <= 0) return null;
-
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  let label, cls;
-  if (hours < 1)       { label = `${mins}m left`;            cls = 'expiry-critical'; }
-  else if (hours < 6)  { label = `${hours}h ${mins}m left`;  cls = 'expiry-warning';  }
-  else if (hours < 24) { label = `${hours}h left`;            cls = 'expiry-soon';     }
-  else                 { const days = Math.floor(hours / 24); label = `${days}d left`; cls = 'expiry-ok'; }
-
-  return <span className={`expiry-badge ${cls}`}><Clock size={10} />{label}</span>;
-};
-
-const ProductModal = ({ product, onClose }) => {
-  const icon = CATEGORY_ICONS[product.category] || '📦';
-  const waNumber = product.seller?.whatsapp?.replace(/\D/g, '');
-  const waLink = waNumber
-    ? `https://wa.me/234${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
-    : null;
-
-  // Lock body scroll while modal is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  return createPortal(
-    <div className="product-modal-backdrop" onClick={handleBackdropClick}>
-      <div className="product-modal" role="dialog" aria-modal="true" aria-label={product.name}>
-        <button className="product-modal-close" onClick={onClose} aria-label="Close">
-          <X size={18} />
-        </button>
-        {/* Scrollable details section */}
-        <div className="product-modal-body">
-        {/* Full image — fixed height, never shrinks */}
-        <div className="product-modal-image">
-          {product.product_image ? (
-            <img src={product.product_image} alt={product.name} />
-          ) : (
-            <div className="product-modal-image-placeholder">
-              <span>{icon}</span>
-            </div>
-          )}
-          <span className="badge badge-gold product-category-badge">{product.category}</span>
-          
-        </div>
-
-
-          <h2 className="product-modal-name">{product.name}</h2>
-          <p className="product-modal-price">₦{Number(product.price).toLocaleString()}</p>
-
-          {product.description && (
-            <>
-              <hr className="product-modal-divider" />
-              <p className="product-modal-desc">{product.description}</p>
-            </>
-          )}
-
-          {product.time_frame && (
-            <div className="product-card-timeframe">
-              <Clock size={12} />
-              <span>{product.time_frame}</span>
-            </div>
-          )}
-
-          {product.seller && (
-            <>
-              <hr className="product-modal-divider" />
-              <Link
-                to={`/${product.seller.username}`}
-                className="product-seller-link product-modal-seller"
-                onClick={onClose}
-              >
-                {product.seller.profile_picture ? (
-                  <img src={product.seller.profile_picture} alt={product.seller.store_name} />
-                ) : (
-                  <span className="seller-initial">{product.seller.store_name?.[0]}</span>
-                )}
-                <span>{product.seller.store_name}</span>
-                {product.seller.rating > 0 && (
-                  <span className="inline-rating">
-                    <Star size={10} fill="currentColor" /> {product.seller.rating.toFixed(1)}
-                  </span>
-                )}
-              </Link>
-            </>
-          )}
-
-          {waLink && (
-            <a href={waLink} target="_blank" rel="noreferrer" className="wa-btn">
-              <WhatsAppIcon />
-              Chat on WhatsApp
-            </a>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
-
 const ProductCard = ({ product }) => {
   const [showModal, setShowModal] = useState(false);
   const icon = CATEGORY_ICONS[product.category] || '📦';
@@ -134,6 +20,7 @@ const ProductCard = ({ product }) => {
   const waLink = waNumber
     ? `https://wa.me/234${waNumber}?text=${encodeURIComponent(`Hi, I'm interested in your product: ${product.name} (₦${Number(product.price).toLocaleString()})`)}`
     : null;
+ const imageCount = (product.images?.length) || (product.product_image ? 1 : 0);
 
   return (
     <>
@@ -147,13 +34,15 @@ const ProductCard = ({ product }) => {
             </div>
           )}
           <span className="badge badge-gold product-category-badge">{product.category}</span>
+           
         </div>
-
+           
         <div className="product-card-body">
           <h3 className="product-card-name">{product.name}</h3>
           {product.description && (
             <p className="product-card-desc">{product.description}</p>
           )}
+          
           {product.time_frame && (
             <div className="product-card-timeframe">
               <Clock size={12} />
@@ -179,8 +68,10 @@ const ProductCard = ({ product }) => {
               </Link>
             )}
           </div>
-
+           
           <button className="view-product-btn" onClick={() => setShowModal(true)}>
+            {imageCount > 1 && <span className=" product-card-timeframe view-productbtn">{imageCount} photos</span>}
+          
             <ExternalLink size={13} />
             View Product
           </button>

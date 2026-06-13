@@ -34,7 +34,7 @@
 }
 
 .seller-card-avatar {
-  z-index: 9999999999999999;
+  z-index: 99;
   position: absolute;
   bottom: -20px;
   left: 1.25rem;

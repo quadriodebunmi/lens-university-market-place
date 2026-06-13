@@ -8,9 +8,9 @@ const Footer = () => (
       <div className="footer-brand">
         <div className="footer-logo">
           <ShoppingBag size={18} />
-          <span>Lens University Market</span>
+          <span>UMA</span>
         </div>
-        <p>Your campus marketplace — connecting students, faculty, and local sellers.</p>
+         <p>A universal marketplace — connecting buyers and sellers everywhere, on and off campus.</p>
       </div>
       <div className="footer-links">
         <div>
@@ -34,7 +34,7 @@ const Footer = () => (
     </div>
     <div className="footer-bottom">
       <div className="container">
-        <p>© {new Date().getFullYear()} Lens University. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} UMA. All rights reserved.</p>
       </div>
     </div>
   </footer>
