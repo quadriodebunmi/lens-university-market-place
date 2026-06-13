@@ -345,6 +345,53 @@ router.get('/:id', async (req, res) => {
 });
 
 // ─── POST /api/products — admin creates product ──────────────────────────────
+// router.post('/', protect, async (req, res) => {
+//   try {
+//     const data = { ...req.body };
+//     if (data.expiry_duration_hours && Number(data.expiry_duration_hours) > 0) {
+//       const h = Number(data.expiry_duration_hours);
+//       data.expires_at = new Date(Date.now() + h * 3600000);
+//       data.expiry_duration_hours = h;
+//     } else {
+//       data.expires_at = null;
+//       data.expiry_duration_hours = null;
+//     }
+
+//     const seller = await Seller.findById(data.seller);
+//     if (!seller) return res.status(404).json({ success: false, message: 'Seller not found' });
+
+//     const product = new Product(data);
+//     await product.save();
+//     await product.populate('seller', 'store_name username profile_picture rating whatsapp');
+
+//    await cache.delPrefix('products:');
+//     res.status(201).json({ success: true, product, message: 'Product created' });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
+// // ─── PUT /api/products/:id — admin updates product ───────────────────────────
+// router.put('/:id', protect, async (req, res) => {
+//   try {
+//     const data = { ...req.body };
+//     if (data.expiry_duration_hours !== undefined) {
+//       const h = Number(data.expiry_duration_hours);
+//       if (h > 0) { data.expires_at = new Date(Date.now() + h * 3600000); data.expiry_duration_hours = h; }
+//       else        { data.expires_at = null; data.expiry_duration_hours = null; }
+//     }
+//     const product = await Product.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true })
+//       .populate('seller', 'store_name username profile_picture rating whatsapp');
+
+//     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+//     await cache.delPrefix('products:');
+//     res.json({ success: true, product, message: 'Product updated' });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
 router.post('/', protect, async (req, res) => {
   try {
     const data = { ...req.body };
@@ -352,44 +399,37 @@ router.post('/', protect, async (req, res) => {
       const h = Number(data.expiry_duration_hours);
       data.expires_at = new Date(Date.now() + h * 3600000);
       data.expiry_duration_hours = h;
-    } else {
-      data.expires_at = null;
-      data.expiry_duration_hours = null;
+    } else { data.expires_at = null; data.expiry_duration_hours = null; }
+    if (Array.isArray(data.images)) {
+      data.images = data.images.filter(Boolean).slice(0, 5);
+      data.product_image = data.images[0] || '';
     }
-
-    const seller = await Seller.findById(data.seller);
-    if (!seller) return res.status(404).json({ success: false, message: 'Seller not found' });
-
+    if (!(await Seller.findById(data.seller))) return res.status(404).json({ success: false, message: 'Seller not found' });
     const product = new Product(data);
     await product.save();
-    await product.populate('seller', 'store_name username profile_picture rating whatsapp');
-
-   await cache.delPrefix('products:');
+    await product.populate('seller','store_name username profile_picture rating whatsapp');
+    await cache.delPrefix('products:');
     res.status(201).json({ success: true, product, message: 'Product created' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// ─── PUT /api/products/:id — admin updates product ───────────────────────────
 router.put('/:id', protect, async (req, res) => {
   try {
     const data = { ...req.body };
     if (data.expiry_duration_hours !== undefined) {
       const h = Number(data.expiry_duration_hours);
       if (h > 0) { data.expires_at = new Date(Date.now() + h * 3600000); data.expiry_duration_hours = h; }
-      else        { data.expires_at = null; data.expiry_duration_hours = null; }
+      else { data.expires_at = null; data.expiry_duration_hours = null; }
     }
-    const product = await Product.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true })
-      .populate('seller', 'store_name username profile_picture rating whatsapp');
-
+    if (Array.isArray(data.images)) {
+      data.images = data.images.filter(Boolean).slice(0, 5);
+      data.product_image = data.images[0] || '';
+    }
+    const product = await Product.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true }).populate('seller','store_name username profile_picture rating whatsapp');
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
-
-    await cache.delPrefix('products:');
+    await Promise.all([cache.delPrefix('products:'), cache.del(`products:single:${req.params.id}`)]);
     res.json({ success: true, product, message: 'Product updated' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 // ─── DELETE /api/products/:id — admin only ───────────────────────────────────

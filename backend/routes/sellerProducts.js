@@ -114,64 +114,108 @@ router.get('/products', protectSeller, async (req, res) => {
   }
 });
 
-// ─── POST /api/seller/products ──────────────────────────────────────────────
+// // ─── POST /api/seller/products ──────────────────────────────────────────────
+// router.post('/products', protectSeller, async (req, res) => {
+//   try {
+//     const sellerDoc = await Seller.findById(req.seller.id);
+//     if (!sellerDoc?.isApproved)
+//       return res.status(403).json({ success: false, message: 'Your account must be approved by admin before posting products' });
+
+//     const { name, description, price, category, product_image, time_frame } = req.body;
+//     if (!name || price === undefined || !category)
+//       return res.status(400).json({ success: false, message: 'Name, price and category required' });
+
+//     // New product is visible only if the seller has an active token
+//     const hasActiveToken = sellerDoc.token_expires_at && new Date(sellerDoc.token_expires_at) > new Date();
+
+//     const product = new Product({
+//       name,
+//       description:           description   || '',
+//       price,
+//       category,
+//       product_image:         product_image || '',
+//       time_frame:            time_frame    || '',
+//       seller:                req.seller.id,
+//       isActive:              hasActiveToken,          // visible immediately if token active
+//       expires_at:            hasActiveToken ? sellerDoc.token_expires_at : null,
+//       expiry_duration_hours: sellerDoc.token_duration_hours || null,
+//     });
+//     await product.save();
+//     await product.populate('seller', 'store_name username profile_picture rating whatsapp');
+
+//     // Bust product list cache
+//    await cache.delPrefix('products:');
+
+//     const msg = hasActiveToken
+//       ? 'Product posted and is now live!'
+//       : 'Product saved. Redeem an admin token to make it visible on the marketplace.';
+
+//     res.status(201).json({ success: true, product, message: msg });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
+// // ─── PUT /api/seller/products/:id ───────────────────────────────────────────
+// router.put('/products/:id', protectSeller, async (req, res) => {
+//   try {
+//     const product = await Product.findOne({ _id: req.params.id, seller: req.seller.id });
+//     if (!product) return res.status(404).json({ success: false, message: 'Product not found or not yours' });
+
+//     const allowed = ['name','description','price','category','product_image','time_frame'];
+//     allowed.forEach(k => { if (req.body[k] !== undefined) product[k] = req.body[k]; });
+//     await product.save();
+//     await product.populate('seller', 'store_name username profile_picture rating whatsapp');
+
+//     await cache.delPrefix('products:');
+//     res.json({ success: true, product, message: 'Product updated' });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// });
+
+
 router.post('/products', protectSeller, async (req, res) => {
   try {
     const sellerDoc = await Seller.findById(req.seller.id);
-    if (!sellerDoc?.isApproved)
-      return res.status(403).json({ success: false, message: 'Your account must be approved by admin before posting products' });
-
-    const { name, description, price, category, product_image, time_frame } = req.body;
-    if (!name || price === undefined || !category)
-      return res.status(400).json({ success: false, message: 'Name, price and category required' });
-
-    // New product is visible only if the seller has an active token
-    const hasActiveToken = sellerDoc.token_expires_at && new Date(sellerDoc.token_expires_at) > new Date();
-
-    const product = new Product({
-      name,
-      description:           description   || '',
-      price,
-      category,
-      product_image:         product_image || '',
-      time_frame:            time_frame    || '',
-      seller:                req.seller.id,
-      isActive:              hasActiveToken,          // visible immediately if token active
-      expires_at:            hasActiveToken ? sellerDoc.token_expires_at : null,
+    if (!sellerDoc?.isApproved) return res.status(403).json({ success: false, message: 'Account must be approved before posting products' });
+    const { name, description, price, category, product_image, images, time_frame } = req.body;
+    if (!name || price === undefined || !category) return res.status(400).json({ success: false, message: 'Name, price and category required' });
+    const hasToken = sellerDoc.token_expires_at && new Date(sellerDoc.token_expires_at) > new Date();
+    let imageList = Array.isArray(images) ? images.filter(Boolean) : (product_image ? [product_image] : []);
+    if (imageList.length > 5) imageList = imageList.slice(0, 5);
+    const product  = new Product({
+      name, description: description||'', price, category,
+      images: imageList,
+      product_image: imageList[0] || '',
+      time_frame: time_frame||'',
+      seller: req.seller.id,
+      isActive: hasToken,
+      expires_at: hasToken ? sellerDoc.token_expires_at : null,
       expiry_duration_hours: sellerDoc.token_duration_hours || null,
     });
     await product.save();
-    await product.populate('seller', 'store_name username profile_picture rating whatsapp');
-
-    // Bust product list cache
-   await cache.delPrefix('products:');
-
-    const msg = hasActiveToken
-      ? 'Product posted and is now live!'
-      : 'Product saved. Redeem an admin token to make it visible on the marketplace.';
-
-    res.status(201).json({ success: true, product, message: msg });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+    await product.populate('seller','store_name username profile_picture rating whatsapp');
+    await cache.delPrefix('products:');
+    res.status(201).json({ success: true, product, message: hasToken ? 'Product posted and live!' : 'Product saved. Redeem a token to make it visible.' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// ─── PUT /api/seller/products/:id ───────────────────────────────────────────
 router.put('/products/:id', protectSeller, async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.id, seller: req.seller.id });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found or not yours' });
-
-    const allowed = ['name','description','price','category','product_image','time_frame'];
+    const allowed = ['name','description','price','category','product_image','images','time_frame'];
     allowed.forEach(k => { if (req.body[k] !== undefined) product[k] = req.body[k]; });
+    if (Array.isArray(product.images)) {
+      if (product.images.length > 5) product.images = product.images.slice(0, 5);
+      product.product_image = product.images[0] || '';
+    }
     await product.save();
-    await product.populate('seller', 'store_name username profile_picture rating whatsapp');
-
+    await product.populate('seller','store_name username profile_picture rating whatsapp');
     await cache.delPrefix('products:');
     res.json({ success: true, product, message: 'Product updated' });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 export default router;
