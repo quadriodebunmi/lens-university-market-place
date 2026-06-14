@@ -56,7 +56,7 @@ const SellerDashboard = () => {
               <p>Your account is under review. You can set up your store but cannot post products until approved.</p>
               <p>Message Admin on whatsapp to approve your account.</p>
                <a
-            href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(`Hi! I just registered on Lens University Market. Please approve my seller account.\nStore: ${seller?.store_name} (@${seller?.username})`)}`}
+            href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(`Hi! I just registered on BuyOnUma. Please approve my seller account.\nStore: ${seller?.store_name} (@${seller?.username})`)}`}
             className="btn btn-wa btn-lg"
             target="_blank" rel="noreferrer">
             <WaIcon /> Message Admin on WhatsApp

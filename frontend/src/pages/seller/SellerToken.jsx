@@ -198,7 +198,7 @@ const SellerToken = () => {
         {/* Get new token */}
         <div className="token-get-card">
           <h3>Need a Token?</h3>
-          <p>Contact the Lens University Market admin on WhatsApp to request a new listing token.</p>
+          <p>Contact the BuyOnUma admin on WhatsApp to request a new listing token.</p>
           <a
             href={`https://wa.me/${ADMIN_WA}?text=${waMsg}`}
             className="btn btn-wa"

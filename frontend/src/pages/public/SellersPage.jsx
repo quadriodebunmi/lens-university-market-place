@@ -17,14 +17,14 @@ const SellersPage = () => {
   const [total, setTotal]             = useState(null);
   const [search, setSearch]           = useState('');
   const [category, setCategory]       = useState('All');
-  const [sortIdx, setSortIdx]         = useState(0);
+  const [sortIdx, setSortIdx]         = useState(2);
 
   // Refs that the observer reads — no stale closures
   const pageRef       = useRef(1);
   const hasMoreRef    = useRef(true);
   const isFetchingRef = useRef(false);  // single gate — prevents all duplicate calls
   const categoryRef   = useRef('All');
-  const sortIdxRef    = useRef(0);
+  const sortIdxRef    = useRef(2);
   const searchRef     = useRef('');
   const sentinelRef   = useRef(null);
   const observerRef   = useRef(null);
