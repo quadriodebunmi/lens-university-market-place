@@ -35,14 +35,14 @@ const getTransporter = async () => {
 export const sendSellerWelcomeEmail = async ({ to, store_name, username }) => {
   try {
     const transporter = await getTransporter();
-    const fromName    = process.env.SMTP_FROM_NAME || 'Lens University Market';
+    const fromName    = process.env.SMTP_FROM_NAME || 'buyonuma';
     const fromEmail   = process.env.SMTP_USER      || 'noreply@lensuniversity.edu.ng';
     const adminWa     = process.env.ADMIN_WHATSAPP  || '2348000000000';
 
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to,
-      subject: `Welcome to Lens University Market, ${store_name}! 🎉`,
+      subject: `Welcome to BuyOnUma, ${store_name}! 🎉`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -68,8 +68,8 @@ export const sendSellerWelcomeEmail = async ({ to, store_name, username }) => {
 <body>
 <div class="wrap">
   <div class="header">
-    <h1>Lens University Market</h1>
-    <p>Campus Marketplace — Seller Portal</p>
+    <h1>Universal Market Access</h1>
+    <p>UMA — Seller Portal</p>
   </div>
   <div class="body">
     <h2>Welcome aboard, ${store_name}! 🎉</h2>
@@ -82,7 +82,7 @@ export const sendSellerWelcomeEmail = async ({ to, store_name, username }) => {
     <div class="step"><span class="step-num">3</span><p><strong>Redeem the token</strong> — Go to your seller dashboard → Redeem Token, and your products go live!</p></div>
 
     <p>Need faster approval? Message us on WhatsApp:</p>
-    <a href="https://wa.me/${adminWa}?text=${encodeURIComponent(`Hi! I just registered as a seller on Lens University Market. My store is: ${store_name} (@${username}). Please approve my account.`)}" class="wa-btn">
+    <a href="https://wa.me/${adminWa}?text=${encodeURIComponent(`Hi! I just registered as a seller on BuyOnUma. My store is: ${store_name} (@${username}). Please approve my account.`)}" class="wa-btn">
       💬 Message Admin on WhatsApp
     </a>
 
@@ -90,7 +90,7 @@ export const sendSellerWelcomeEmail = async ({ to, store_name, username }) => {
       Your login username is <strong>@${username}</strong>. Keep your password safe — you can update your profile anytime from your seller dashboard at <strong>/seller/dashboard</strong>.
     </div>
   </div>
-  <div class="footer">© ${new Date().getFullYear()} Lens University Market · All rights reserved</div>
+  <div class="footer">© ${new Date().getFullYear()} buyonuma · All rights reserved</div>
 </div>
 </body>
 </html>
@@ -113,13 +113,13 @@ export const sendSellerWelcomeEmail = async ({ to, store_name, username }) => {
 export const sendPasswordResetEmail = async ({ to, store_name, code }) => {
   try {
     const transporter = await getTransporter();
-    const fromName    = process.env.SMTP_FROM_NAME || 'Lens University Market';
+    const fromName    = process.env.SMTP_FROM_NAME || 'buyonuma';
     const fromEmail   = process.env.SMTP_USER      || 'noreply@lensuniversity.edu.ng';
 
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to,
-      subject: 'Your Password Reset Code — Lens University Market',
+      subject: 'Your Password Reset Code — BuyOnUma',
       html: `
 <!DOCTYPE html>
 <html>
@@ -141,7 +141,7 @@ export const sendPasswordResetEmail = async ({ to, store_name, code }) => {
 </head>
 <body>
 <div class="wrap">
-  <div class="header"><h1>Lens University Market</h1></div>
+  <div class="header"><h1>Universal Market Access</h1></div>
   <div class="body">
     <p>Hi <strong>${store_name}</strong>,</p>
     <p>We received a request to reset your seller account password. Use the code below:</p>
@@ -149,7 +149,7 @@ export const sendPasswordResetEmail = async ({ to, store_name, code }) => {
     <p class="expire">This code expires in <strong>10 minutes</strong>.</p>
     <div class="warn">If you did not request a password reset, ignore this email. Your account is still secure.</div>
   </div>
-  <div class="footer">© ${new Date().getFullYear()} Lens University Market</div>
+  <div class="footer">© ${new Date().getFullYear()} UNIVERSAL MARKET ACCESS</div>
 </div>
 </body>
 </html>`,
