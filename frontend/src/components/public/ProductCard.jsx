@@ -33,7 +33,7 @@ const ProductCard = ({ product }) => {
               <span>{icon}</span>
             </div>
           )}
-          <span className="badge badge-gold product-category-badge">{product.category}</span>
+          <span className="badg badge-gold product-category-badge">{product.category}</span>
            
         </div>
            
