@@ -414,6 +414,7 @@ border-radius: 100px;
 MOBILE: show 2 compact product cards per row instead of 1 full-width card
 ───────────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
+   .product-card{display:flex;flex-direction:column ; width: 150px; margin-left: -5px;}
 .product-grid {
 grid-template-columns: repeat(2, 1fr) !important;
 gap: 0.6rem !important;
